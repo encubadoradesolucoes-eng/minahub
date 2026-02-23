@@ -1,0 +1,5 @@
+# Copie este arquivo para .env.local
+# NÃO suba o .env.local para o GitHub!
+
+NEXT_PUBLIC_SUPABASE_URL=https://wfojtmexnohzonbbgwzl.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indmb2p0bWV4bm9oem9uYmJnd3psIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4Mjg2OTQsImV4cCI6MjA4NzQwNDY5NH0.a_BRHFdWF3AqUK_3fLKv9cYHtuk53gSE7DpnTLwWy4o

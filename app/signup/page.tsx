@@ -19,26 +19,46 @@ export default function SignupPage() {
     setError(null);
     setMessage(null);
     setLoading(true);
-    const { error: err } = await supabase.auth.signUp({ email, password });
+    
+    // Para desenvolvimento: criar conta sem confirmação de e-mail
+    const { error: err } = await supabase.auth.signUp({ 
+      email, 
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/login`,
+        data: {
+          skip_email_verification: true
+        }
+      }
+    });
+    
     setLoading(false);
     if (err) {
       setError(err.message);
       return;
     }
-    setMessage("Conta criada. Verifique seu e-mail para confirmar o cadastro.");
-    router.refresh();
+    
+    // Para desenvolvimento: fazer login automático
+    const { error: loginErr } = await supabase.auth.signInWithPassword({ email, password });
+    if (loginErr) {
+      setError(loginErr.message);
+      return;
+    }
+    
+    setMessage("Conta criada com sucesso!");
+    router.push("/dashboard/cadastro-completo");
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-sm space-y-8">
-        <div className="text-center">
-          <Link href="/" className="text-2xl font-bold text-mine-400">MineHub</Link>
-          <p className="mt-2 text-slate-400">Crie sua conta</p>
+    <div style={{minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px', backgroundColor: '#0c1222'}}>
+      <div style={{width: '100%', maxWidth: '400px'}}>
+        <div style={{textAlign: 'center'}}>
+          <Link href="/" style={{fontSize: '24px', fontWeight: 'bold', color: '#4ade80', textDecoration: 'none'}}>MineHub</Link>
+          <p style={{marginTop: '8px', color: '#cbd5e1'}}>Crie sua conta</p>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" style={{minWidth: '300px'}}>
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-1">
+            <label htmlFor="email" style={{display: 'block', fontSize: '14px', fontWeight: '500', color: '#cbd5e1', marginBottom: '4px'}}>
               E-mail
             </label>
             <input
@@ -47,12 +67,20 @@ export default function SignupPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-mine-500"
+              style={{
+                width: '100%',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                backgroundColor: '#1e293b',
+                border: '1px solid #475569',
+                color: 'white',
+                fontSize: '16px'
+              }}
               placeholder="seu@email.com"
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-1">
+            <label htmlFor="password" style={{display: 'block', fontSize: '14px', fontWeight: '500', color: '#cbd5e1', marginBottom: '4px'}}>
               Senha (mín. 6 caracteres)
             </label>
             <input
@@ -62,22 +90,39 @@ export default function SignupPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
-              className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-mine-500"
+              style={{
+                width: '100%',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                backgroundColor: '#1e293b',
+                border: '1px solid #475569',
+                color: 'white',
+                fontSize: '16px'
+              }}
             />
           </div>
-          {error && <p className="text-sm text-red-400">{error}</p>}
-          {message && <p className="text-sm text-mine-400">{message}</p>}
+          {error && <p style={{color: '#f87171', fontSize: '14px'}}>{error}</p>}
+          {message && <p style={{color: '#4ade80', fontSize: '14px'}}>{message}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-lg bg-mine-600 text-white font-medium hover:bg-mine-500 disabled:opacity-50 transition"
+            style={{
+              width: '100%',
+              padding: '12px',
+              borderRadius: '8px',
+              backgroundColor: loading ? '#6b7280' : '#16a34a',
+              color: 'white',
+              fontSize: '16px',
+              fontWeight: '500',
+              cursor: loading ? 'not-allowed' : 'pointer'
+            }}
           >
             {loading ? "Criando…" : "Cadastrar"}
           </button>
         </form>
-        <p className="text-center text-slate-400 text-sm">
+        <p style={{textAlign: 'center', color: '#cbd5e1', fontSize: '14px', marginTop: '16px'}}>
           Já tem conta?{" "}
-          <Link href="/login" className="text-mine-400 hover:underline">Entrar</Link>
+          <Link href="/login" style={{color: '#4ade80', textDecoration: 'underline'}}>Entrar</Link>
         </p>
       </div>
     </div>

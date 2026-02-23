@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Empresa, Licenca } from "@/types/database";
+import { DEV_MODE, mockUser, mockEmpresa, mockLicenca } from "@/lib/dev-mode";
 
 export interface LicencaStatus {
   hasEmpresa: boolean;
@@ -10,6 +11,17 @@ export interface LicencaStatus {
 }
 
 export async function getLicencaStatus(): Promise<LicencaStatus> {
+  // MODO DESENVOLVIMENTO
+  if (DEV_MODE) {
+    return {
+      hasEmpresa: true,
+      hasLicencaAtiva: true,
+      empresas: [{ ...mockEmpresa, licenca_ativa: mockLicenca }],
+      licencaAtiva: mockLicenca,
+      empresaAtiva: mockEmpresa
+    };
+  }
+
   const supabase = await createClient();
   const {
     data: { user },

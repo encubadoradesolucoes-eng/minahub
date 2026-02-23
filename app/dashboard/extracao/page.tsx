@@ -29,8 +29,6 @@ export default async function ExtracaoPage() {
     const res = await query;
     extracao = res.data;
   }
-  }
-  const { data: extracao } = await query;
 
   return (
     <div className="p-6 md:p-8 max-w-5xl">

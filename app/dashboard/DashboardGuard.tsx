@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { DashboardShell } from "./DashboardShell";
 import type { LicencaStatus } from "@/lib/saas";
+import { DEV_MODE } from "@/lib/dev-mode";
 
 const SETUP_PATHS = ["/dashboard/cadastro-completo", "/dashboard/sem-licenca"];
 
@@ -23,6 +24,9 @@ export function DashboardGuard({
   const isSetupPath = SETUP_PATHS.some((p) => pathname?.startsWith(p));
 
   useEffect(() => {
+    // MODO DESENVOLVIMENTO - Pular verificações
+    if (DEV_MODE) return;
+    
     if (isSetupPath) return;
     if (!status.hasEmpresa) {
       router.replace("/dashboard/cadastro-completo");
@@ -38,6 +42,15 @@ export function DashboardGuard({
     await createClient().auth.signOut();
     router.push("/");
     router.refresh();
+  }
+
+  // MODO DESENVOLVIMENTO - Mostrar dashboard direto
+  if (DEV_MODE) {
+    return (
+      <DashboardShell sidebar={sidebar}>
+        {children}
+      </DashboardShell>
+    );
   }
 
   if (isSetupPath) {
