@@ -1,7 +1,9 @@
--- Esquema principal: mining_finance
-CREATE SCHEMA IF NOT EXISTS mining_finance;
+-- ===================================================================
+-- MINEHUB - TABELAS PRINCIPAIS (SaaS já existe)
+-- Execute apenas se as tabelas SaaS já foram criadas
+-- ===================================================================
 
--- 1. PROJETOS DE MINERAÇÃO
+-- 1. PROJETOS
 CREATE TABLE mining_finance.projetos (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nome VARCHAR(200) NOT NULL,
@@ -9,40 +11,17 @@ CREATE TABLE mining_finance.projetos (
     tipo_projeto VARCHAR(50) CHECK (tipo_projeto IN ('exploracao', 'desenvolvimento', 'producao', 'reabilitacao')),
     status VARCHAR(50) CHECK (status IN ('planejamento', 'ativo', 'pausado', 'concluido')),
     mineral_principal VARCHAR(100),
-    localizacao JSONB, -- {estado, municipio, coordenadas}
+    localizacao JSONB,
     data_inicio DATE,
     data_previsao_termino DATE,
     area_hectares DECIMAL(15,2),
     responsavel_tecnico_id UUID,
+    empresa_id UUID NOT NULL REFERENCES mining_finance.empresas(id),
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- 2. CONTROLE DE EXTRAÇÃO (Produção)
-CREATE TABLE mining_finance.extracao (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    projeto_id UUID REFERENCES mining_finance.projetos(id),
-    data_extracao DATE NOT NULL,
-    turno VARCHAR(20) CHECK (turno IN ('manha', 'tarde', 'noite')),
-    frente_trabalho VARCHAR(100),
-    equipamento_id UUID,
-
-    -- Métricas de produção
-    toneladas_brutas DECIMAL(15,2) NOT NULL,
-    teor_medio DECIMAL(10,4), -- Percentual do mineral
-    toneladas_uteis DECIMAL(15,2) GENERATED ALWAYS AS (toneladas_brutas * teor_medio/100) STORED,
-
-    -- Custos associados
-    custo_operacional DECIMAL(15,2),
-    custo_combustivel DECIMAL(15,2),
-    custo_manutencao DECIMAL(15,2),
-
-    observacoes TEXT,
-    created_by UUID,
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
--- 3. CONTROLE DE EQUIPAMENTOS (Ativo Fixo)
+-- 2. EQUIPAMENTOS
 CREATE TABLE mining_finance.equipamentos (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     codigo VARCHAR(50) UNIQUE NOT NULL,
@@ -51,24 +30,39 @@ CREATE TABLE mining_finance.equipamentos (
     marca VARCHAR(100),
     modelo VARCHAR(100),
     ano_fabricacao INTEGER,
-
-    -- Dados financeiros
     valor_aquisicao DECIMAL(15,2),
     data_aquisicao DATE,
     vida_util_anos INTEGER,
     valor_residual DECIMAL(15,2),
     depreciacao_mensal DECIMAL(15,2) GENERATED ALWAYS AS
         ((valor_aquisicao - valor_residual) / NULLIF(vida_util_anos * 12, 0)) STORED,
-
-    -- Controle operacional
     horas_trabalhadas_total INTEGER DEFAULT 0,
-    consumo_medio_combustivel DECIMAL(10,2), -- Litros/hora
+    consumo_medio_combustivel DECIMAL(10,2),
     status VARCHAR(50) CHECK (status IN ('operacional', 'manutencao', 'inativo')),
-
+    empresa_id UUID NOT NULL REFERENCES mining_finance.empresas(id),
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- 4. FINANCIAMENTOS (Project Finance)
+-- 3. EXTRAÇÃO
+CREATE TABLE mining_finance.extracao (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    projeto_id UUID REFERENCES mining_finance.projetos(id),
+    data_extracao DATE NOT NULL,
+    turno VARCHAR(20) CHECK (turno IN ('manha', 'tarde', 'noite')),
+    frente_trabalho VARCHAR(100),
+    equipamento_id UUID,
+    toneladas_brutas DECIMAL(15,2) NOT NULL,
+    teor_medio DECIMAL(10,4),
+    toneladas_uteis DECIMAL(15,2) GENERATED ALWAYS AS (toneladas_brutas * teor_medio/100) STORED,
+    custo_operacional DECIMAL(15,2),
+    custo_combustivel DECIMAL(15,2),
+    custo_manutencao DECIMAL(15,2),
+    observacoes TEXT,
+    created_by UUID,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- 4. FINANCIAMENTOS
 CREATE TABLE mining_finance.financiamentos (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     projeto_id UUID REFERENCES mining_finance.projetos(id),
@@ -80,17 +74,14 @@ CREATE TABLE mining_finance.financiamentos (
     carencia_meses INTEGER DEFAULT 0,
     data_contratacao DATE,
     data_primeiro_pagamento DATE,
-
-    -- Para streaming/royalty
-    percentual_producao DECIMAL(5,2), -- % da produção comprometida
-    preco_fixo DECIMAL(15,2), -- Preço acordado para streaming
-
+    percentual_producao DECIMAL(5,2),
+    preco_fixo DECIMAL(15,2),
     garantias TEXT,
     observacoes TEXT,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- 5. AMORTIZAÇÕES (Pagamentos de financiamentos)
+-- 5. AMORTIZAÇÕES
 CREATE TABLE mining_finance.amortizacoes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     financiamento_id UUID REFERENCES mining_finance.financiamentos(id),
@@ -102,7 +93,7 @@ CREATE TABLE mining_finance.amortizacoes (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- 6. CONTAS A PAGAR (Despesas operacionais)
+-- 6. CONTAS A PAGAR
 CREATE TABLE mining_finance.contas_pagar (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     projeto_id UUID REFERENCES mining_finance.projetos(id),
@@ -119,160 +110,116 @@ CREATE TABLE mining_finance.contas_pagar (
     data_emissao DATE NOT NULL,
     data_vencimento DATE NOT NULL,
     data_pagamento DATE,
-
-    -- Campos para recuperação de impostos (setor mineral)
     credito_icms DECIMAL(15,2) DEFAULT 0,
     credito_ipi DECIMAL(15,2) DEFAULT 0,
     credito_pis_cofins DECIMAL(15,2) DEFAULT 0,
-
-    comprovante_url TEXT[], -- Links para fotos/faturas no Storage
+    comprovante_url TEXT[],
     status VARCHAR(20) CHECK (status IN ('pendente', 'pago', 'cancelado')),
     forma_pagamento VARCHAR(50),
     created_by UUID,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- 7. CONTAS A RECEBER (Vendas de minério)
+-- 7. CONTAS A RECEBER
 CREATE TABLE mining_finance.contas_receber (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     projeto_id UUID REFERENCES mining_finance.projetos(id),
     cliente_id UUID,
     contrato_id UUID,
-
-    -- Dados da venda
     nota_fiscal VARCHAR(50),
     quantidade_toneladas DECIMAL(15,2) NOT NULL,
     preco_tonelada DECIMAL(15,2) NOT NULL,
-    teor_real DECIMAL(10,4), -- Teor efetivamente entregue
+    teor_real DECIMAL(10,4),
     valor_bruto DECIMAL(15,2) NOT NULL,
-
-    -- Tributos sobre venda
-    cfem DECIMAL(15,2), -- Compensação Financeira pela Exploração Mineral
+    cfem DECIMAL(15,2),
     iss DECIMAL(15,2),
     icms DECIMAL(15,2),
-
     valor_liquido DECIMAL(15,2) GENERATED ALWAYS AS (
         valor_bruto - COALESCE(cfem,0) - COALESCE(iss,0) - COALESCE(icms,0)
     ) STORED,
-
     data_embarque DATE,
     data_vencimento DATE NOT NULL,
     data_recebimento DATE,
     status VARCHAR(20) CHECK (status IN ('emitida', 'faturada', 'recebida', 'cancelada')),
-
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- 8. CONTRATOS DE VENDA (Offtakes)
+-- 8. CONTRATOS DE VENDA
 CREATE TABLE mining_finance.contratos_venda (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     projeto_id UUID REFERENCES mining_finance.projetos(id),
     cliente_id UUID,
     numero_contrato VARCHAR(100) UNIQUE NOT NULL,
     tipo_contrato VARCHAR(50) CHECK (tipo_contrato IN ('spot', 'longo_prazo', 'offtake')),
-
-    -- Condições comerciais
     volume_total_toneladas DECIMAL(15,2),
-    preco_referencia VARCHAR(50), -- Ex: "LME - 15%", "Fixado"
+    preco_referencia VARCHAR(50),
     periodicidade_entrega VARCHAR(20),
-
-    -- Para pré-pagamento (financiamento)
     tem_pre_pagamento BOOLEAN DEFAULT FALSE,
     valor_pre_pagamento DECIMAL(15,2),
     saldo_pre_pagamento DECIMAL(15,2),
     data_pre_pagamento DATE,
-
     data_inicio DATE NOT NULL,
     data_fim DATE,
     clausulas TEXT,
     status VARCHAR(20) CHECK (status IN ('vigente', 'encerrado', 'cancelado')),
-
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- 9. FLUXO DE CAIXA (Consolidado)
+-- 9. FLUXO DE CAIXA
 CREATE TABLE mining_finance.fluxo_caixa (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     projeto_id UUID REFERENCES mining_finance.projetos(id),
     data_referencia DATE NOT NULL,
     tipo_movimento VARCHAR(20) CHECK (tipo_movimento IN ('previsto', 'realizado')),
-
-    -- Entradas
     receita_vendas DECIMAL(15,2) DEFAULT 0,
     receita_financeira DECIMAL(15,2) DEFAULT 0,
     outros_recebimentos DECIMAL(15,2) DEFAULT 0,
-
-    -- Saídas
     custo_operacional DECIMAL(15,2) DEFAULT 0,
     custo_pessoal DECIMAL(15,2) DEFAULT 0,
     custo_manutencao DECIMAL(15,2) DEFAULT 0,
     impostos_recolher DECIMAL(15,2) DEFAULT 0,
     amortizacoes DECIMAL(15,2) DEFAULT 0,
     investimentos DECIMAL(15,2) DEFAULT 0,
-
-    -- Totais calculados
-    -- total_entradas DECIMAL(15,2) GENERATED ALWAYS AS (
-    --     receita_vendas + receita_financeira + outros_recebimentos
-    -- ) STORED,
-
-    -- total_saidas DECIMAL(15,2) GENERATED ALWAYS AS (
-    --     custo_operacional + custo_pessoal + custo_manutencao +
-    --     impostos_recolher + amortizacoes + investimentos
-    -- ) STORED,
-
-    -- saldo_dia DECIMAL(15,2) GENERATED ALWAYS AS (total_entradas - total_saidas) STORED,
-    
-    -- Totais calculados como colunas normais
     total_entradas DECIMAL(15,2) GENERATED ALWAYS AS (
         receita_vendas + receita_financeira + outros_recebimentos
     ) STORED,
-
     total_saidas DECIMAL(15,2) GENERATED ALWAYS AS (
         custo_operacional + custo_pessoal + custo_manutencao +
         impostos_recolher + amortizacoes + investimentos
     ) STORED,
-
     saldo_dia DECIMAL(15,2) GENERATED ALWAYS AS (
         (receita_vendas + receita_financeira + outros_recebimentos) -
         (custo_operacional + custo_pessoal + custo_manutencao +
          impostos_recolher + amortizacoes + investimentos)
     ) STORED,
-
     created_at TIMESTAMP DEFAULT NOW(),
     UNIQUE(projeto_id, data_referencia, tipo_movimento)
 );
 
--- 10. INDICADORES (KPIs calculados)
+-- 10. KPIS
 CREATE TABLE mining_finance.kpis_history (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     projeto_id UUID REFERENCES mining_finance.projetos(id),
     data_referencia DATE NOT NULL,
-
-    -- KPIs operacionais
     custo_tonelada_extraida DECIMAL(15,2),
     custo_tonelada_util DECIMAL(15,2),
-    produtividade_hora DECIMAL(15,2), -- Toneladas/hora
-
-    -- KPIs financeiros
-    aisc DECIMAL(15,2), -- All-in Sustaining Cost
-    margem_contribuicao DECIMAL(5,2), -- Percentual
+    produtividade_hora DECIMAL(15,2),
+    aisc DECIMAL(15,2),
+    margem_contribuicao DECIMAL(5,2),
     ebitda DECIMAL(15,2),
-
-    -- KPIs de endividamento
     divida_liquida DECIMAL(15,2),
-    alavancagem DECIMAL(5,2), -- Dívida Líquida/EBITDA
-
+    alavancagem DECIMAL(5,2),
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Índices para consultas frequentes
+-- ÍNDICES
 CREATE INDEX idx_extracao_projeto_data ON mining_finance.extracao(projeto_id, data_extracao);
 CREATE INDEX idx_contas_pagar_vencimento ON mining_finance.contas_pagar(data_vencimento, status);
 CREATE INDEX idx_contas_receber_vencimento ON mining_finance.contas_receber(data_vencimento, status);
 CREATE INDEX idx_fluxo_caixa_projeto_data ON mining_finance.fluxo_caixa(projeto_id, data_referencia);
 CREATE INDEX idx_amortizacoes_financiamento ON mining_finance.amortizacoes(financiamento_id, data_vencimento);
 
--- Trigger para updated_at em projetos
+-- TRIGGER
 CREATE OR REPLACE FUNCTION mining_finance.set_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -284,3 +231,60 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER projetos_updated_at
     BEFORE UPDATE ON mining_finance.projetos
     FOR EACH ROW EXECUTE FUNCTION mining_finance.set_updated_at();
+
+-- VIEW
+CREATE VIEW mining_finance.v_dashboard_financeiro AS
+SELECT 
+    p.id as projeto_id,
+    p.nome as projeto_nome,
+    e.nome as empresa_nome,
+    COALESCE(cr.valor_liquido, 0) as total_receber,
+    COALESCE(cp.valor_liquido, 0) as total_pagar,
+    COALESCE(cr.valor_liquido, 0) - COALESCE(cp.valor_liquido, 0) as saldo_liquido,
+    COALESCE(cr.contas_count, 0) as contas_receber_count,
+    COALESCE(cp.contas_count, 0) as contas_pagar_count
+FROM mining_finance.projetos p
+JOIN mining_finance.empresas e ON p.empresa_id = e.id
+LEFT JOIN (
+    SELECT 
+        projeto_id, 
+        SUM(valor_liquido) as valor_liquido, 
+        COUNT(*) as contas_count
+    FROM mining_finance.contas_receber 
+    WHERE status IN ('emitida', 'faturada')
+    GROUP BY projeto_id
+) cr ON p.id = cr.projeto_id
+LEFT JOIN (
+    SELECT 
+        projeto_id, 
+        SUM(valor_liquido) as valor_liquido, 
+        COUNT(*) as contas_count
+    FROM mining_finance.contas_pagar 
+    WHERE status = 'pendente'
+    GROUP BY projeto_id
+) cp ON p.id = cp.projeto_id;
+
+-- RLS
+ALTER TABLE mining_finance.projetos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mining_finance.extracao ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mining_finance.equipamentos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mining_finance.financiamentos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mining_finance.amortizacoes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mining_finance.contas_pagar ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mining_finance.contas_receber ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mining_finance.contratos_venda ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mining_finance.fluxo_caixa ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mining_finance.kpis_history ENABLE ROW LEVEL SECURITY;
+
+-- Políticas RLS
+CREATE POLICY "Projetos visíveis apenas para empresa" ON mining_finance.projetos
+    FOR ALL USING (
+        empresa_id IN (
+            SELECT empresa_id FROM mining_finance.user_empresas 
+            WHERE user_id = auth.uid() AND ativo = TRUE
+        )
+    );
+
+-- ===================================================================
+-- FIM
+-- ===================================================================
