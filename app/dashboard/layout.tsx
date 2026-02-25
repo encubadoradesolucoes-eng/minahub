@@ -26,33 +26,45 @@ export default async function DashboardLayout({
   const empresaAtiva = licenca.empresas.find((e) => e.id === activeEmpresaId);
   const licencaAtivaEmpresa = empresaAtiva?.licenca_ativa;
 
-  async function signOut() {
+  const role = user?.user_metadata?.role || "admin";
+
+  const nav = [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, role: "any" },
+    { href: "/dashboard/financeiro", label: "Financeiro", icon: Wallet, role: "admin" },
+    { href: "/dashboard/projetos", label: "Projetos", icon: FolderKanban, role: "gerente" },
+    { href: "/dashboard/extracao", label: "Extração", icon: Truck, role: "operador" },
+    { href: "/dashboard/equipamentos", label: "Equipamentos", icon: Fuel, role: "operador" },
+    { href: "/dashboard/contas-pagar", label: "Contas a pagar", icon: Wallet, role: "admin" },
+    { href: "/dashboard/contas-receber", label: "Contas a receber", icon: Wallet, role: "admin" },
+    { href: "/dashboard/financiamentos", label: "Financiamentos", icon: FileText, role: "admin" },
+    { href: "/dashboard/planejamento", label: "Planejamento de missão", icon: Target, role: "gerente" },
+    { href: "/dashboard/relatorios", label: "Relatórios", icon: FileText, role: "gerente" },
+    { href: "/dashboard/conta", label: "Minha conta", icon: User, role: "any" },
+    { href: "/dashboard/renovar", label: "Planos / Renovar", icon: CreditCard, role: "admin" },
+  ];
+
+  const filteredNav = nav.filter(item => {
+    if (item.role === "any") return true;
+    if (role === "admin") return true;
+    if (role === "gerente") return item.role !== "admin";
+    if (role === "operador") return item.role === "operador";
+    return false;
+  });
+
+  async function signOutAction() {
     "use server";
     const supabase = await createClient();
     await supabase.auth.signOut();
     redirect("/");
   }
 
-  const nav = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/dashboard/projetos", label: "Projetos", icon: FolderKanban },
-    { href: "/dashboard/extracao", label: "Extração", icon: Truck },
-    { href: "/dashboard/equipamentos", label: "Equipamentos", icon: Fuel },
-    { href: "/dashboard/contas-pagar", label: "Contas a pagar", icon: Wallet },
-    { href: "/dashboard/contas-receber", label: "Contas a receber", icon: Wallet },
-    { href: "/dashboard/financiamentos", label: "Financiamentos", icon: FileText },
-    { href: "/dashboard/planejamento", label: "Planejamento de missão", icon: Target },
-    { href: "/dashboard/conta", label: "Minha conta", icon: User },
-    { href: "/dashboard/renovar", label: "Planos / Renovar", icon: CreditCard },
-  ];
-
   const sidebar = (
-    <aside className="w-56 border-r border-slate-800 bg-slate-900/50 flex flex-col">
+    <aside className="w-56 border-r border-slate-800 bg-slate-900/50 flex flex-col h-full overflow-hidden">
       <div className="p-4 border-b border-slate-800">
         <Link href="/dashboard" className="text-lg font-bold text-mine-400">MineHub</Link>
       </div>
-      <nav className="flex-1 p-2 space-y-0.5">
-        {nav.map(({ href, label, icon: Icon }) => (
+      <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
+        {filteredNav.map(({ href, label, icon: Icon }) => (
           <Link
             key={href}
             href={href}
@@ -63,17 +75,17 @@ export default async function DashboardLayout({
           </Link>
         ))}
       </nav>
-      <div className="p-2 border-t border-slate-800">
+      <div className="p-2 border-t border-slate-800 bg-slate-950/20">
         <EmpresaSelector empresas={licenca.empresas} activeEmpresaId={activeEmpresaId} />
         {empresaAtiva && licencaAtivaEmpresa && (
-          <div className="px-3 py-1.5 text-xs text-mine-500">
-            {(licencaAtivaEmpresa as { plano: string; data_fim: string }).plano} · até {(licencaAtivaEmpresa as { data_fim: string }).data_fim}
+          <div className="px-3 py-1.5 text-[10px] text-mine-500 font-medium truncate uppercase tracking-tighter">
+            {(licencaAtivaEmpresa as any).plano} · até {(licencaAtivaEmpresa as any).data_fim}
           </div>
         )}
-        <form action={signOut}>
+        <form action={signOutAction}>
           <button
             type="submit"
-            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition text-sm"
+            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-slate-400 hover:bg-red-900/20 hover:text-red-400 transition text-sm"
           >
             <LogOut className="w-5 h-5" />
             Sair

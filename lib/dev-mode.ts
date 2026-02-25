@@ -1,5 +1,5 @@
 // MODO DESENVOLVIMENTO - Pular autenticação
-export const DEV_MODE = true; // Mude para false em produção
+export const DEV_MODE = false; // Mude para false em produção
 
 export const mockUser = {
   id: 'dev-user-id',
@@ -13,7 +13,7 @@ export const mockUser = {
 export const mockEmpresa = {
   id: 'dev-empresa-id',
   nome: 'Empresa Teste Dev',
-  cnpj: '00.000.000/0001-00',
+  nuit: '000.000.000',
   tipo: 'empresa',
   tipo_tenant: 'empresa' as const,
   created_at: new Date().toISOString()

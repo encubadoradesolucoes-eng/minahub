@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEmpresaId } from "@/lib/empresa-ativa";
+import Link from "next/link";
+import { Plus } from "lucide-react";
 
 export default async function ContasReceberPage() {
   const supabase = await createClient();
@@ -20,7 +22,16 @@ export default async function ContasReceberPage() {
 
   return (
     <div className="p-6 md:p-8 max-w-5xl">
-      <h1 className="text-2xl font-bold text-white mb-8">Contas a receber</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-2xl font-bold text-white">Contas a receber</h1>
+        <Link
+          href="/dashboard/contas-receber/novo"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-mine-600 text-white font-medium hover:bg-mine-500 transition"
+        >
+          <Plus className="w-5 h-5" />
+          Novo lançamento
+        </Link>
+      </div>
 
       <div className="rounded-xl border border-slate-700 bg-slate-800/50 overflow-hidden">
         <table className="w-full text-sm">
@@ -47,13 +58,12 @@ export default async function ContasReceberPage() {
                   <td className="p-3 font-mono text-slate-300">{c.nota_fiscal ?? "—"}</td>
                   <td className="p-3 text-right">{Number(c.quantidade_toneladas).toLocaleString("pt-BR")}</td>
                   <td className="p-3 text-right">
-                    {Number(c.valor_bruto).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                    {Number(c.valor_bruto).toLocaleString("pt-MZ", { style: "currency", currency: "MZN" })}
                   </td>
                   <td className="p-3">
                     <span
-                      className={`inline-flex px-2 py-0.5 rounded text-xs ${
-                        c.status === "recebida" ? "bg-mine-900/50 text-mine-400" : "bg-slate-700 text-slate-300"
-                      }`}
+                      className={`inline-flex px-2 py-0.5 rounded text-xs ${c.status === "recebida" ? "bg-mine-900/50 text-mine-400" : "bg-slate-700 text-slate-300"
+                        }`}
                     >
                       {c.status}
                     </span>

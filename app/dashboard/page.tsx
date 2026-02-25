@@ -63,7 +63,7 @@ export default async function DashboardPage() {
   const alertas = (fluxo || []).filter(
     (f: VwFluxoCaixaComparativo) => f.saldo_previsto != null && Number(f.saldo_previsto) < 0
   );
-  const projetoIds = [...new Set(alertas.map((a: VwFluxoCaixaComparativo) => a.projeto_id))];
+  const projetoIds = Array.from(new Set(alertas.map((a: VwFluxoCaixaComparativo) => a.projeto_id)));
   const { data: projetosList } =
     projetoIds.length > 0
       ? await supabase.schema("mining_finance").from("projetos").select("id, nome").in("id", projetoIds)
@@ -90,9 +90,9 @@ export default async function DashboardPage() {
           <ul className="space-y-2">
             {alertas.slice(0, 5).map((a: VwFluxoCaixaComparativo) => (
               <li key={`${a.projeto_id}-${a.data_referencia}`} className="text-sm text-slate-300">
-                {projetoNomePorId.get(a.projeto_id) ?? a.projeto_id} em {a.data_referencia}: saldo previsto{" "}
+                {(projetoNomePorId.get(a.projeto_id) as string) ?? a.projeto_id} em {a.data_referencia}: saldo previsto{" "}
                 <span className="text-amber-400">
-                  {Number(a.saldo_previsto).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                  {Number(a.saldo_previsto).toLocaleString("pt-MZ", { style: "currency", currency: "MZN" })}
                 </span>
               </li>
             ))}
@@ -102,6 +102,34 @@ export default async function DashboardPage() {
           )}
         </section>
       )}
+
+      <section className="mb-8 p-6 rounded-xl bg-slate-900 border border-slate-800">
+        <h2 className="text-white font-semibold mb-6 flex items-center gap-2">
+          <TrendingUp className="w-5 h-5 text-mine-400" />
+          Produção Diária (Toneladas Brutas)
+        </h2>
+        <div className="flex items-end gap-3 h-32 px-2">
+          {[450, 600, 300, 800, 950, 400, 500].map((val, i) => (
+            <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
+              <div className="relative w-full bg-slate-800 rounded-t-md overflow-hidden flex items-end h-full">
+                <div
+                  className="w-full bg-mine-500/80 group-hover:bg-mine-400 transition-all duration-300"
+                  style={{ height: `${(val / 1000) * 100}%` }}
+                />
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-mine-400 font-bold">
+                  {val}t
+                </div>
+              </div>
+              <span className="text-[10px] text-slate-500 uppercase font-mono">
+                {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'][i]}
+              </span>
+            </div>
+          ))}
+        </div>
+        <p className="mt-4 text-[11px] text-slate-500 italic text-center">
+          * Dados meramente ilustrativos no modo simulação.
+        </p>
+      </section>
 
       <section className="mb-8">
         <h2 className="flex items-center gap-2 text-slate-200 font-semibold mb-4">
@@ -135,9 +163,9 @@ export default async function DashboardPage() {
                     <td className="p-3">{r.projeto_nome}</td>
                     <td className="p-3 text-right">{Number(r.total_toneladas).toLocaleString("pt-BR")}</td>
                     <td className="p-3 text-right">
-                      {Number(r.custo_medio_por_tonelada).toLocaleString("pt-BR", {
+                      {Number(r.custo_medio_por_tonelada).toLocaleString("pt-MZ", {
                         style: "currency",
-                        currency: "BRL",
+                        currency: "MZN",
                         minimumFractionDigits: 2,
                       })}
                     </td>

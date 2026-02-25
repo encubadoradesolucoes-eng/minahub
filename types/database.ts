@@ -50,7 +50,7 @@ export interface Extracao {
   created_at: string;
 }
 
-export type EquipamentoTipo = "caminhao" | "escavadeira" | "perfuratriz" | "britador" | "gerador" | "outros";
+export type EquipamentoTipo = "camiao" | "escavadeira" | "perfuratriz" | "britador" | "gerador" | "outros";
 export type EquipamentoStatus = "operacional" | "manutencao" | "inativo";
 
 export interface Equipamento {
@@ -68,6 +68,8 @@ export interface Equipamento {
   horas_trabalhadas_total: number;
   consumo_medio_combustivel: number | null;
   status: EquipamentoStatus | null;
+  tipo_propriedade: "proprio" | "alugado" | null;
+  projeto_id: string | null;
   created_at: string;
 }
 
@@ -108,7 +110,7 @@ export type PlanoLicenca = "trial" | "basico" | "profissional" | "empresarial" |
 export interface Empresa {
   id: string;
   nome: string;
-  cnpj: string | null;
+  nuit: string | null;
   tipo_tenant: TipoTenant | null;
   created_at: string;
 }

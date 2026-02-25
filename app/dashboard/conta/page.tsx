@@ -35,8 +35,7 @@ export default async function ContaPage() {
                 <div>
                   <p className="text-white font-medium">{e.nome}</p>
                   <p className="text-slate-500 text-sm">
-                    {e.tipo_tenant === "explorador" ? "Explorador" : "Empresa"}
-                    {e.cnpj && ` · ${e.cnpj}`}
+                    {e.nuit && ` · NUIT: ${e.nuit}`}
                   </p>
                 </div>
                 {e.licenca_ativa ? (
@@ -71,10 +70,12 @@ export default async function ContaPage() {
             )}
           </div>
         ) : (
-          <p className="text-slate-500 mb-3">Nenhuma licença ativa.</p>
-          <Link href="/dashboard/renovar" className="text-mine-400 hover:underline text-sm">
-            Ver planos e renovar →
-          </Link>
+          <>
+            <p className="text-slate-500 mb-3">Nenhuma licença ativa.</p>
+            <Link href="/dashboard/renovar" className="text-mine-400 hover:underline text-sm">
+              Ver planos e renovar →
+            </Link>
+          </>
         )}
       </section>
     </div>

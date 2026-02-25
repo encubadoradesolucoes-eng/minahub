@@ -2,15 +2,17 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import type { Equipamento } from "@/types/database";
+import { getMaintenanceAlerts } from "@/lib/equipamentos";
 
 const TIPO_LABEL: Record<string, string> = {
-  caminhao: "Caminhão",
+  camiao: "Camião",
   escavadeira: "Escavadeira",
   perfuratriz: "Perfuratriz",
   britador: "Britador",
   gerador: "Gerador",
   outros: "Outros",
 };
+
 const STATUS_LABEL: Record<string, string> = {
   operacional: "Operacional",
   manutencao: "Manutenção",
@@ -25,6 +27,8 @@ export default async function EquipamentosPage() {
     .select("*")
     .order("codigo");
 
+  const alerts = await getMaintenanceAlerts();
+
   return (
     <div className="p-6 md:p-8 max-w-5xl">
       <div className="flex items-center justify-between mb-8">
@@ -38,6 +42,39 @@ export default async function EquipamentosPage() {
         </Link>
       </div>
 
+      {/* Alertas de Manutenção */}
+      {alerts.length > 0 && (
+        <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+          {alerts.map((alert) => (
+            <div
+              key={alert.id}
+              className={`p-4 rounded-xl border ${alert.dias_restantes < 0 ? "bg-red-950/30 border-red-800" : "bg-amber-950/30 border-amber-800"
+                }`}
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <h4 className="text-white font-semibold text-sm">{alert.equipamento_nome}</h4>
+                  <p className="text-xs text-slate-400">
+                    {alert.codigo} • {alert.tipo}
+                  </p>
+                </div>
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${alert.dias_restantes < 0 ? "bg-red-500 text-white" : "bg-amber-500 text-black"
+                    }`}
+                >
+                  {alert.dias_restantes < 0 ? "Atrasado" : "Em breve"}
+                </span>
+              </div>
+              <p className="mt-2 text-xs text-slate-300">
+                {alert.dias_restantes < 0
+                  ? `Manutenção em atraso por ${Math.abs(alert.dias_restantes)} dias`
+                  : `Agendada para daqui a ${alert.dias_restantes} dias`}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="rounded-xl border border-slate-700 bg-slate-800/50 overflow-hidden">
         <table className="w-full text-sm">
           <thead>
@@ -45,6 +82,7 @@ export default async function EquipamentosPage() {
               <th className="p-3">Código</th>
               <th className="p-3">Nome</th>
               <th className="p-3">Tipo</th>
+              <th className="p-3">Propriedade</th>
               <th className="p-3">Status</th>
               <th className="p-3 text-right">Valor aquisição</th>
             </tr>
@@ -66,21 +104,28 @@ export default async function EquipamentosPage() {
                   <td className="p-3 text-white">{eq.nome}</td>
                   <td className="p-3 text-slate-300">{eq.tipo ? TIPO_LABEL[eq.tipo] ?? eq.tipo : "—"}</td>
                   <td className="p-3">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${eq.tipo_propriedade === 'proprio' ? 'bg-blue-900/50 text-blue-400' : 'bg-purple-900/50 text-purple-400'}`}>
+                      {eq.tipo_propriedade === 'proprio' ? 'Património' : 'Alugado'}
+                    </span>
+                  </td>
+                  <td className="p-3">
                     <span
-                      className={`inline-flex px-2 py-0.5 rounded text-xs ${
-                        eq.status === "operacional"
-                          ? "bg-mine-900/50 text-mine-400"
-                          : eq.status === "manutencao"
+                      className={`inline-flex px-2 py-0.5 rounded text-xs ${eq.status === "operacional"
+                        ? "bg-mine-900/50 text-mine-400"
+                        : eq.status === "manutencao"
                           ? "bg-amber-900/50 text-amber-400"
                           : "bg-slate-700 text-slate-400"
-                      }`}
+                        }`}
                     >
                       {eq.status ? STATUS_LABEL[eq.status] ?? eq.status : "—"}
                     </span>
                   </td>
                   <td className="p-3 text-right">
                     {eq.valor_aquisicao != null
-                      ? Number(eq.valor_aquisicao).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+                      ? Number(eq.valor_aquisicao).toLocaleString("pt-MZ", {
+                        style: "currency",
+                        currency: "MZN",
+                      })
                       : "—"}
                   </td>
                 </tr>

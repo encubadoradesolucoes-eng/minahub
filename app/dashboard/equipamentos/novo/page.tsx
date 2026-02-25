@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { EquipamentoTipo, EquipamentoStatus } from "@/types/database";
 
 const TIPOS: { value: EquipamentoTipo; label: string }[] = [
-  { value: "caminhao", label: "Caminhão" },
+  { value: "camiao", label: "Camião" },
   { value: "escavadeira", label: "Escavadeira" },
   { value: "perfuratriz", label: "Perfuratriz" },
   { value: "britador", label: "Britador" },
@@ -24,6 +24,7 @@ export default function NovoEquipamentoPage() {
     codigo: "",
     nome: "",
     tipo: "outros" as EquipamentoTipo,
+    tipo_propriedade: "proprio" as "proprio" | "alugado",
     marca: "",
     modelo: "",
     ano_fabricacao: "",
@@ -43,6 +44,7 @@ export default function NovoEquipamentoPage() {
       codigo: form.codigo,
       nome: form.nome,
       tipo: form.tipo,
+      tipo_propriedade: form.tipo_propriedade,
       marca: form.marca || null,
       modelo: form.modelo || null,
       ano_fabricacao: form.ano_fabricacao ? Number(form.ano_fabricacao) : null,
@@ -108,6 +110,33 @@ export default function NovoEquipamentoPage() {
                 </option>
               ))}
             </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1">Propriedade</label>
+            <div className="flex gap-4 mt-2">
+              <label className="flex items-center gap-2 text-white cursor-pointer">
+                <input
+                  type="radio"
+                  name="tipo_propriedade"
+                  value="proprio"
+                  checked={form.tipo_propriedade === "proprio"}
+                  onChange={() => setForm((f) => ({ ...f, tipo_propriedade: "proprio" }))}
+                  className="w-4 h-4 text-mine-600 bg-slate-900 border-slate-600"
+                />
+                Património
+              </label>
+              <label className="flex items-center gap-2 text-white cursor-pointer">
+                <input
+                  type="radio"
+                  name="tipo_propriedade"
+                  value="alugado"
+                  checked={form.tipo_propriedade === "alugado"}
+                  onChange={() => setForm((f) => ({ ...f, tipo_propriedade: "alugado" }))}
+                  className="w-4 h-4 text-mine-600 bg-slate-900 border-slate-600"
+                />
+                Alugado
+              </label>
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1">Status</label>

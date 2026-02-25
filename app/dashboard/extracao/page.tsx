@@ -66,7 +66,7 @@ export default async function ExtracaoPage() {
                 </td>
               </tr>
             ) : (
-              (extracao || []).map((e: Extracao & { projetos: { nome: string } | null }) => (
+              ((extracao || []) as Array<Extracao & { projetos: { nome: string } | null }>).map((e) => (
                 <tr key={e.id} className="border-b border-slate-700/50">
                   <td className="p-3">{e.data_extracao}</td>
                   <td className="p-3">{(e.projetos as { nome: string } | null)?.nome ?? "—"}</td>
@@ -75,7 +75,7 @@ export default async function ExtracaoPage() {
                   <td className="p-3 text-right">{e.teor_medio != null ? `${Number(e.teor_medio).toFixed(2)}%` : "—"}</td>
                   <td className="p-3 text-right">
                     {e.custo_operacional != null
-                      ? Number(e.custo_operacional).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+                      ? Number(e.custo_operacional).toLocaleString("pt-MZ", { style: "currency", currency: "MZN" })
                       : "—"}
                   </td>
                 </tr>

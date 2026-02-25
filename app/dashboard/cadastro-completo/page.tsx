@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { TipoTenant } from "@/types/database";
+import { validarNUIT } from "@/lib/nuit";
 
 const TRIAL_DIAS = 30;
 
@@ -15,7 +16,7 @@ export default function CadastroCompletoPage() {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     nome: "",
-    cnpj: "",
+    nuit: "",
     tipo_tenant: "empresa" as TipoTenant,
   });
 
@@ -36,7 +37,7 @@ export default function CadastroCompletoPage() {
       .from("empresas")
       .insert({
         nome: form.nome.trim(),
-        cnpj: form.cnpj.trim() || null,
+        nuit: form.nuit.trim() || null,
         tipo_tenant: form.tipo_tenant,
       })
       .select("id")
@@ -117,13 +118,13 @@ export default function CadastroCompletoPage() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1">CNPJ (opcional)</label>
+          <label className="block text-sm font-medium text-slate-300 mb-1">NUIT (opcional)</label>
           <input
             type="text"
-            value={form.cnpj}
-            onChange={(e) => setForm((f) => ({ ...f, cnpj: e.target.value }))}
+            value={form.nuit}
+            onChange={(e) => setForm((f) => ({ ...f, nuit: e.target.value }))}
             className="w-full px-4 py-2 rounded-lg bg-slate-900 border border-slate-600 text-white"
-            placeholder="00.000.000/0001-00"
+            placeholder="Ex: 123456789"
           />
         </div>
         {error && <p className="text-red-400 text-sm">{error}</p>}
